@@ -1,0 +1,32 @@
+ALPHA_OBJECTS= \
+    $(_OBJ_DIR)\alpha\passthru.res \
+    $(_OBJ_DIR)\alpha\passthru.obj \
+    $(_OBJ_DIR)\alpha\protocol.obj \
+    $(_OBJ_DIR)\alpha\miniport.obj
+
+PASS0_ALPHA_OBJECTS=
+
+AXP64_OBJECTS= \
+    $(_OBJ_DIR)\axp64\passthru.res \
+    $(_OBJ_DIR)\axp64\passthru.obj \
+    $(_OBJ_DIR)\axp64\protocol.obj \
+    $(_OBJ_DIR)\axp64\miniport.obj
+
+PASS0_AXP64_OBJECTS=
+
+386_OBJECTS= \
+    $(_OBJ_DIR)\i386\passthru.res \
+    $(_OBJ_DIR)\i386\passthru.obj \
+    $(_OBJ_DIR)\i386\protocol.obj \
+    $(_OBJ_DIR)\i386\miniport.obj
+
+PASS0_386_OBJECTS=
+
+IA64_OBJECTS= \
+    $(_OBJ_DIR)\ia64\passthru.res \
+    $(_OBJ_DIR)\ia64\passthru.obj \
+    $(_OBJ_DIR)\ia64\protocol.obj \
+    $(_OBJ_DIR)\ia64\miniport.obj
+
+PASS0_IA64_OBJECTS=
+

@@ -1,0 +1,34 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: Listen - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating command line "rc.exe /l 0x804 /fo"Debug/Listen.res" /d "_DEBUG" /d "_AFXDLL" "C:\Documents and Settings\Administrator\×ÀÃæ\NDISMonitor\listen\Listen.rc"" 
+Creating temporary file "C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP68.tmp" with contents
+[
+/nologo /subsystem:windows /incremental:yes /pdb:"Debug/Listen.pdb" /debug /machine:I386 /out:"Debug/Listen.exe" /pdbtype:sept 
+".\Debug\Listen.obj"
+".\Debug\ListenDoc.obj"
+".\Debug\ListenView.obj"
+".\Debug\MainFrm.obj"
+".\Debug\MyDefine.obj"
+".\Debug\PacketAnalysisDlg.obj"
+".\Debug\SetFilterDlg.obj"
+".\Debug\StdAfx.obj"
+".\Debug\Listen.res"
+]
+Creating command line "link.exe @C:\DOCUME~1\ADMINI~1\LOCALS~1\Temp\RSP68.tmp"
+<h3>Output Window</h3>
+Compiling resources...
+Linking...
+
+
+
+<h3>Results</h3>
+Listen.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

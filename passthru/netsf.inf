@@ -1,0 +1,159 @@
+; -- NETSF.INF --
+;
+; Sample Filter INF file
+;
+; Copyright (c) 1993-1999, Microsoft Corporation
+
+; ----------------------------------------------------------------------
+; Note:
+; 1. Items specifically required for a filter have been marked with
+;    "!!--Filter Specific--!!" keyword
+;
+; 2. A filter DOES NOT require a notify object for proper installation.
+;    A notify object is only required if one wants to have better control
+;    over binding operations or if one wants to receive notifications
+;    when other components get installed/removed/bound/unbound.
+;    This sample uses a notify object as an example only. If you do not
+;    want to use a notify object, please follow the instructions in (4).
+;
+; 3. If you want to use this INF file with your own IM driver, please
+;    make the following modifications:
+;    File netsf.inf
+;    --------------
+;    a. In section [SourceDiskFiles] and [SFilter.CopyFiles.Sys]
+;       change passthru.sys to the name of your own driver binary.
+;    b. In section [SFilter.ndi.AddReg], change values of
+;       BindForm and MiniportId to appropriate values.
+;    File netsf_m.inf
+;    ----------------
+;    a. Replace MS_SFilterMP with InfId of your miniport.
+;    b. In section [SFilterMP.AddService],
+;       change ServiceBinary appropriately.
+;    c. In section [SFilterMP.ndi.AddReg],
+;       change "SFilter" in the line having "Service"
+;       to reflect the appropriate name
+;
+; 4. If you want to use this INF for installing the sample IM without
+;    the notify object, do the following:
+;    a. In section [SFilter.ndi.AddReg],
+;       Comment out lines having ClsId and ComponentDll
+;    b. In section [SFilter.ndi],
+;       change the value of Characteristics so that it does not have
+;       the NCF_HAS_UI flag
+;    c. In section [SourceDiskFiles], comment out the line having sfilter.dll
+;    d. In section [SFilter.ndi], remove SFilter.CopyFiles.Init from the
+;       CopyFiles line.
+;
+; ----------------------------------------------------------------------
+
+[Version]
+Signature  = "$Windows NT$"
+Class      = NetService
+ClassGUID  = {4D36E974-E325-11CE-BFC1-08002BE10318}
+Provider   = %Msft%
+DriverVer  = 06/24/1999,5.00.2071.1
+
+
+[Manufacturer]
+%Msft% = MSFT
+
+[ControlFlags]
+
+[MSFT]
+%SFilter_Desc% = SFilter.ndi, ms_sfilter
+
+[SFilter.ndi]
+AddReg = SFilter.ndi.AddReg, SFilter.AddReg
+; Note:
+; 1. The NCF_* flags are defined in netcfgx.h
+; 2. NCF_HAS_UI (0x80) is required only if the filter has a Notify object
+;    and it supports custom property pages.
+Characteristics = 0x490 ; NCF_HAS_UI | NCF_FILTER | NCF_NO_SERVICE !!--Filter Specific--!!
+CopyFiles       = SFilter.CopyFiles.Init, SFilter.CopyFiles.Sys, SFilter.CopyFiles.Inf
+
+; ----------------------------------------------------------------------
+; File copy
+;
+[SourceDisksNames]
+1=%DiskDescription%,"",,
+
+[SourceDisksFiles]
+sfilter.dll=1
+passthru.sys=1
+netsf_m.inf=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+SFilter.CopyFiles.Init  = 11   ; %windir%\System32
+SFilter.CopyFiles.Sys   = 12   ; %windir%\System32\drivers
+SFilter.CopyFiles.Inf   = 17   ; %windir%\inf
+
+; Copying of sfilter.dll is required only if the filter has a Notify object
+[SFilter.CopyFiles.Init]
+sfilter.dll,,,2
+
+[SFilter.CopyFiles.Sys]
+passthru.sys,,,2
+
+[SFilter.CopyFiles.Inf]
+netsf_m.inf,,,2
+
+; ----------------------------------------------------------------------
+; Filter Install
+;
+
+[SFilter.ndi.AddReg]
+HKR, Ndi, HelpText, , %SFilter_HELP%
+
+; ----------------------------------------------------------------------
+; Keys required if a Notify object is present
+; These keys should be omitted if the Filter does not have any Notify object
+;
+; Note:
+; 1. Only include the following lines if your filter has configuration UI
+;    that needs to be displayed.  Otherwise, you should not need a notify
+;    object.
+; 2. If you write your own notifyobject, use a different GUID for ClsID!!
+;    (Generate this with uuidgen.exe)
+;
+HKR, Ndi, ClsID,        , {df2e4f67-e93a-11d1-bb14-0000f8779051}
+HKR, Ndi, ComponentDll, , sfilter.dll
+
+; ----------------------------------------------------------------------
+; !!--Filter Specific--!!
+;
+; Note:
+; 1. Other components may also have UpperRange/LowerRange but for filters
+;    the value of both of them must be noupper/nolower
+; 2. The value FilterClass is required.
+; 3. The value Service is required
+; 4. FilterDeviceInfId is the InfId of the filter device (miniport) that will
+;    be installed for each filtered adapter.
+;    In this case this is ms_sfiltermp (refer to netsf_m.inf)
+;
+HKR, Ndi,            FilterClass,         , failover
+HKR, Ndi,            FilterDeviceInfFile, , netsf_m.inf
+HKR, Ndi,            FilterDeviceInfId,   , ms_sfiltermp
+HKR, Ndi,            Service,             , Sfilter
+HKR, Ndi\Interfaces, UpperRange,          , noupper
+HKR, Ndi\Interfaces, LowerRange,          , nolower
+HKR, Ndi\Interfaces, FilterMediaTypes,    , "ethernet, tokenring, fddi"
+
+[SFilter.AddReg]
+; The following key is Required
+; The following key is SFilter specific
+HKR, Parameters, Param1, 0, 4
+
+[SFilter.Ndi.Remove.Services]
+    DelService = SFilter
+
+; ----------------------------------------------------------------------
+[Strings]
+Msft = "Microsoft"
+DiskDescription = "Microsoft Sample Filter Disk"
+
+SFilter_Desc = "Sample Filter"
+SFilter_HELP = "Sample Filter"
+
+
+
